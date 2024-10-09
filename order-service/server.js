@@ -3,6 +3,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
+const amqp = require('amqplib/callback_api');
 
 const app = express();
 app.use(bodyParser.json());
@@ -81,6 +82,36 @@ app.put('/orders/:orderId', async (req, res) => {
     } catch (error) {
         res.status(400).send({ message: 'Error updating order', error });
     }
+});
+
+// Connect to RabbitMQ
+amqp.connect('amqp://localhost', (err, connection) => {
+  if (err) throw err;
+  connection.createChannel((err, channel) => {
+      if (err) throw err;
+
+      const queue = 'order_created';
+
+      // Ensure the queue exists
+      channel.assertQueue(queue, { durable: false });
+
+      // Create a new order (existing code)
+      app.post('/orders', async (req, res) => {
+          try {
+              const newOrder = new Order(req.body);
+              await newOrder.save();
+
+              // Publish the order creation event to RabbitMQ
+              const orderData = JSON.stringify(newOrder);
+              channel.sendToQueue(queue, Buffer.from(orderData));
+              console.log(`Order event sent to queue: ${orderData}`);
+
+              res.status(201).send(newOrder);
+          } catch (error) {
+              res.status(400).send({ message: 'Error creating order', error });
+          }
+      });
+  });
 });
 
 // Start the server
