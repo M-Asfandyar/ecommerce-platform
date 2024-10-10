@@ -9,7 +9,7 @@ const app = express();
 app.use(bodyParser.json());
 
 // MongoDB connection setup
-mongoose.connect(process.env.MONGODB_URI , {
+mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 }).then(() => console.log('Connected to MongoDB'))
@@ -80,6 +80,11 @@ app.get('/profile', authenticateToken, async (req, res) => {
     } catch (error) {
         res.status(500).send({ message: 'Error fetching user profile', error });
     }
+});
+
+// Catch-all route for any unhandled routes (for testing API Gateway with root path)
+app.post('/', (req, res) => {
+    res.status(200).send({ message: 'User Service root reached' });
 });
 
 // Start the server

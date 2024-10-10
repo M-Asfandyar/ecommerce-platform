@@ -29,13 +29,42 @@ const orderSchema = new mongoose.Schema({
 
 const Order = mongoose.model('Order', orderSchema);
 
+// RabbitMQ Setup
+let channel = null;
+amqp.connect('amqp://localhost', (err, connection) => {
+    if (err) {
+        console.error('Error connecting to RabbitMQ:', err);
+        return;
+    }
+    connection.createChannel((err, ch) => {
+        if (err) {
+            console.error('Error creating RabbitMQ channel:', err);
+            return;
+        }
+        channel = ch;
+        const queue = 'order_created';
+        channel.assertQueue(queue, { durable: false });
+        console.log('Connected to RabbitMQ and queue setup complete');
+    });
+});
+
 // API Endpoints
 
 // Create a new order
-app.post('/orders', async (req, res) => {
+app.post('/', async (req, res) => { // Updated to root level
     try {
         const newOrder = new Order(req.body);
         await newOrder.save();
+
+        // Publish the order creation event to RabbitMQ if the channel is available
+        if (channel) {
+            const orderData = JSON.stringify(newOrder);
+            channel.sendToQueue('order_created', Buffer.from(orderData));
+            console.log(`Order event sent to queue: ${orderData}`);
+        } else {
+            console.error('RabbitMQ channel is not available');
+        }
+
         res.status(201).send(newOrder);
     } catch (error) {
         res.status(400).send({ message: 'Error creating order', error });
@@ -43,7 +72,7 @@ app.post('/orders', async (req, res) => {
 });
 
 // Get all orders
-app.get('/orders', async (req, res) => {
+app.get('/', async (req, res) => { // Updated to root level
     try {
         const orders = await Order.find();
         res.status(200).send(orders);
@@ -53,7 +82,7 @@ app.get('/orders', async (req, res) => {
 });
 
 // Get order by ID
-app.get('/orders/:orderId', async (req, res) => {
+app.get('/:orderId', async (req, res) => { // Updated to root level
     try {
         const order = await Order.findOne({ orderId: req.params.orderId });
         if (order) {
@@ -67,7 +96,7 @@ app.get('/orders/:orderId', async (req, res) => {
 });
 
 // Update order status
-app.put('/orders/:orderId', async (req, res) => {
+app.put('/:orderId', async (req, res) => { // Updated to root level
     try {
         const updatedOrder = await Order.findOneAndUpdate(
             { orderId: req.params.orderId },
@@ -82,36 +111,6 @@ app.put('/orders/:orderId', async (req, res) => {
     } catch (error) {
         res.status(400).send({ message: 'Error updating order', error });
     }
-});
-
-// Connect to RabbitMQ
-amqp.connect('amqp://localhost', (err, connection) => {
-  if (err) throw err;
-  connection.createChannel((err, channel) => {
-      if (err) throw err;
-
-      const queue = 'order_created';
-
-      // Ensure the queue exists
-      channel.assertQueue(queue, { durable: false });
-
-      // Create a new order (existing code)
-      app.post('/orders', async (req, res) => {
-          try {
-              const newOrder = new Order(req.body);
-              await newOrder.save();
-
-              // Publish the order creation event to RabbitMQ
-              const orderData = JSON.stringify(newOrder);
-              channel.sendToQueue(queue, Buffer.from(orderData));
-              console.log(`Order event sent to queue: ${orderData}`);
-
-              res.status(201).send(newOrder);
-          } catch (error) {
-              res.status(400).send({ message: 'Error creating order', error });
-          }
-      });
-  });
 });
 
 // Start the server

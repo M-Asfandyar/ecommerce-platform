@@ -2,8 +2,10 @@ require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+const cors = require('cors');
 
 const app = express();
+app.use(cors());
 app.use(bodyParser.json());
 
 // MongoDB connection setup 
@@ -24,20 +26,39 @@ const productSchema = new mongoose.Schema({
 const Product = mongoose.model('Product', productSchema);
 
 // API Endpoints
-app.post('/products', async (req, res) => {
-    const newProduct = new Product(req.body);
-    await newProduct.save();
-    res.status(201).send(newProduct);
+
+// Create a new product
+app.post('/', async (req, res) => {
+    try {
+        const newProduct = new Product(req.body);
+        await newProduct.save();
+        res.status(201).send(newProduct);
+    } catch (error) {
+        console.error('Error creating product:', error);
+        res.status(500).send({ message: 'Error creating product', error });
+    }
 });
 
-app.get('/products', async (req, res) => {
-    const products = await Product.find();
-    res.status(200).send(products);
+// Get all products (keeping the /products route for compatibility)
+app.get('/', async (req, res) => {
+    try {
+        const products = await Product.find();
+        res.status(200).send(products);
+    } catch (error) {
+        console.error('Error retrieving products:', error);
+        res.status(500).send({ message: 'Error retrieving products', error });
+    }
 });
 
-app.put('/products/:id', async (req, res) => {
-    const updatedProduct = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.status(200).send(updatedProduct);
+// Update a product by ID
+app.put('/:id', async (req, res) => {
+    try {
+        const updatedProduct = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        res.status(200).send(updatedProduct);
+    } catch (error) {
+        console.error('Error updating product:', error);
+        res.status(500).send({ message: 'Error updating product', error });
+    }
 });
 
 const PORT = process.env.PORT || 3001;

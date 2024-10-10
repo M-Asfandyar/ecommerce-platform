@@ -10,7 +10,7 @@ const app = express();
 app.use(bodyParser.json());
 
 // MongoDB connection setup (optional, for logging payment data)
-mongoose.connect(process.env.MONGODB_URI , {
+mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 }).then(() => console.log('Connected to MongoDB for Payment Service'))
@@ -28,8 +28,8 @@ const paymentSchema = new mongoose.Schema({
 
 const Payment = mongoose.model('Payment', paymentSchema);
 
-// Create a Payment Intent
-app.post('/create-payment-intent', async (req, res) => {
+// Create a Payment Intent (Change the path to the root '/')
+app.post('/', async (req, res) => {
     try {
         const { amount, currency, orderId } = req.body;
         const paymentIntent = await stripe.paymentIntents.create({
@@ -80,24 +80,24 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
 
 // Connect to RabbitMQ
 amqp.connect('amqp://localhost', (err, connection) => {
-  if (err) throw err;
-  connection.createChannel((err, channel) => {
-      if (err) throw err;
+    if (err) throw err;
+    connection.createChannel((err, channel) => {
+        if (err) throw err;
 
-      const queue = 'order_created';
+        const queue = 'order_created';
 
-      // Ensure the queue exists
-      channel.assertQueue(queue, { durable: false });
+        // Ensure the queue exists
+        channel.assertQueue(queue, { durable: false });
 
-      // Consume messages from the queue
-      channel.consume(queue, (msg) => {
-          const orderData = JSON.parse(msg.content.toString());
-          console.log(`Received order event: ${orderData.orderId}`);
+        // Consume messages from the queue
+        channel.consume(queue, (msg) => {
+            const orderData = JSON.parse(msg.content.toString());
+            console.log(`Received order event: ${orderData.orderId}`);
 
-          // Process the order payment logic here
-          // Update the order status to 'completed' once the payment is successful
-      }, { noAck: true });
-  });
+            // Process the order payment logic here
+            // Update the order status to 'completed' once the payment is successful
+        }, { noAck: true });
+    });
 });
 
 // Start the server
