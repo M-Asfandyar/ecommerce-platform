@@ -14,30 +14,38 @@ app.use((req, res, next) => {
 
 // Proxy configuration for Product Service
 app.use('/products', createProxyMiddleware({
-  target: 'http://localhost:3001',
+  target: 'http://product-service:3001', // Use the Docker service name
   changeOrigin: true,
-  pathRewrite: (path, req) => path.replace('/products', ''),
+  pathRewrite: {
+      '^/products': '', // Remove '/products' from the path before forwarding
+  },
 }));
 
 // Proxy configuration for Order Service
 app.use('/orders', createProxyMiddleware({
-  target: 'http://localhost:3002',
+  target: 'http://order-service:3002', // Use the Docker service name here
   changeOrigin: true,
-  pathRewrite: (path, req) => path.replace('/orders', ''),
+  pathRewrite: {
+      '^/orders': '', // Remove '/orders' from the path before forwarding
+  },
 }));
 
 // Proxy configuration for User Service
 app.use('/users', createProxyMiddleware({
-  target: 'http://localhost:3003',
+  target: 'http://user-service:3003', // Use the Docker service name here
   changeOrigin: true,
-  pathRewrite: (path, req) => path.replace('/users', ''),
+  pathRewrite: {
+      '^/users': '', // Remove '/users' from the path before forwarding
+  },
 }));
 
 // Proxy configuration for Payment Service
 app.use('/payments', createProxyMiddleware({
-  target: 'http://localhost:3004',
+  target: 'http://payment-service:3004', // Use the Docker service name here
   changeOrigin: true,
-  pathRewrite: (path, req) => path.replace('/payments', ''), // This removes '/payments' before forwarding
+  pathRewrite: {
+      '^/payments': '', // Remove '/payments' from the path before forwarding
+  },
 }));
 
 app.listen(PORT, () => {

@@ -13,8 +13,8 @@ RUN npm install
 # Copy the rest of the application code
 COPY . .
 
-# Expose the port your service will run on (e.g., 3000)
-EXPOSE 3000
+# The port service is running on 
+EXPOSE 3001
 
 # Command to run the Node.js app
 CMD ["npm", "start"]

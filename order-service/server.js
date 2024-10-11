@@ -31,7 +31,7 @@ const Order = mongoose.model('Order', orderSchema);
 
 // RabbitMQ Setup
 let channel = null;
-amqp.connect('amqp://localhost', (err, connection) => {
+amqp.connect('amqp://rabbitmq', (err, connection) => {
     if (err) {
         console.error('Error connecting to RabbitMQ:', err);
         return;

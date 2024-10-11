@@ -79,7 +79,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
 });
 
 // Connect to RabbitMQ
-amqp.connect('amqp://localhost', (err, connection) => {
+amqp.connect('amqp://rabbitmq', (err, connection) => {
     if (err) throw err;
     connection.createChannel((err, channel) => {
         if (err) throw err;
